@@ -57,26 +57,24 @@ async def check_posts():
                 # regex match relevant part of post titlej for server ads
                 pattern = re.compile('([^\[]*)', re.IGNORECASE)
                 titlesubstr = str(pattern.match(submission.title).group().strip())
-                # will be empty if this is not a server ad
-                if (titlesubstr):
+
+                if (titlesubstr): # this is a server ad
 
                     # Check if this post is too soon ..
                     time = int(submission.created_utc)  # this post time
-                    too_soon = False # assume innocence
-
                     try:
                         prevpost = shelf[titlesubstr]  # previous post data
                         delta = time - prevpost[0]  # time between posts
                         # 597600 = 7 days less 2 hours: prevent warnings for topics just about at the limit
                         if (delta < 597600):
-                            too_soon = True
+                            # send warning message
+                            await send_message(chan_warn, titlesubstr + ' <http://redd.it/' + str(
+                                submission.id) + '/> posted too soon. previous: <http://redd.it/' + prevpost[
+                                                   1] + '/> ' + duration_string_format(delta) + ' ago')
 
                     except KeyError:
                         # pass key error exceptions, this happens when a titlesubstr is new/not in the shelf yet
                         pass
-
-                    if too_soon is True:
-                        await send_message(chan_warn, titlesubstr + ' <http://redd.it/' + str(submission.id) + '/> posted too soon. previous: <http://redd.it/' + prevpost[1] + '/> ' + duration_string_format(delta) + ' ago')
 
                     # store this post
                     shelf[titlesubstr] = [time, submission.id]
@@ -100,8 +98,8 @@ async def on_ready():
     global chan_log
     chan_warn = client.get_channel('403496655455911937')  # #warnings channel
     chan_feed = client.get_channel('403496751677308941')  # #mcservers-feed channel
-    chan_log = client.get_channel('403496630390620161')   # #bot-log channel
-    await send_message(chan_log, 'Bot started.')
+    #chan_log = client.get_channel('403496630390620161')   # #bot-log channel
+    #await send_message(chan_log, 'Bot started.')
     try:
         client.loop.run_until_complete(check_posts())
     except:
